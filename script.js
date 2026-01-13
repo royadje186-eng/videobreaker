@@ -1,3 +1,5 @@
+// script.js (REPLACE ENTIRE FILE)
+
 const videoInput = document.getElementById("videoInput");
 const processButton = document.getElementById("processButton");
 const downloadZipButton = document.getElementById("downloadZipButton");
@@ -47,7 +49,7 @@ async function loadVideoFromFile(file) {
 }
 
 async function seekTo(timeSec) {
-  // Clamp
+  // Clamp time
   const t = Math.max(0, Math.min(timeSec, hiddenVideo.duration || timeSec));
   hiddenVideo.currentTime = t;
 
@@ -119,11 +121,10 @@ processButton.addEventListener("click", async () => {
       return;
     }
 
-    // Estimate frames
+    // Estimate frames count
     const estCount = Math.floor(hiddenVideo.duration / step) + 1;
     const total = Math.min(estCount, maxFrames);
 
-    // Heads-up if huge
     if (estCount > maxFrames) {
       setStatus(
         `Video is long for ${step}s steps. Limiting to ${maxFrames} frames (you can increase Max frames).`
@@ -132,23 +133,20 @@ processButton.addEventListener("click", async () => {
       setStatus(`Extracting ${total} frames...`);
     }
 
-    // Some browsers need a play/pause to "warm up" decoding
-    // (helps reduce blank frames)
+    // Warm up decoding (reduces blank frames on some browsers)
     try {
       await hiddenVideo.play();
       hiddenVideo.pause();
     } catch (_) {
-      // ignore autoplay restrictions
+      // Ignore autoplay restrictions
     }
 
-    const mimeType = "image/png"; // You can change to "image/jpeg" for smaller files
+    const mimeType = "image/png"; // change to "image/jpeg" for smaller files if desired
 
     for (let i = 0; i < total; i++) {
       const t = i * step;
 
-      // Seek then draw
       await seekTo(t);
-
       ctx.drawImage(hiddenVideo, 0, 0, hiddenCanvas.width, hiddenCanvas.height);
 
       const blob = await canvasToBlob(mimeType, 0.92);
@@ -182,23 +180,42 @@ downloadZipButton.addEventListener("click", async () => {
     downloadZipButton.disabled = true;
 
     const zip = new JSZip();
+
+    // Put frames inside a folder (cleaner in Files app)
+    const folder = zip.folder("frames");
+
     for (const item of extracted) {
-      zip.file(item.filename, item.blob);
+      folder.file(item.filename, item.blob);
     }
 
-    const blob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(blob);
+    // iOS Safari tends to be more stable with lower compression level
+    const zipBlob = await zip.generateAsync({
+      type: "blob",
+      compression: "DEFLATE",
+      compressionOptions: { level: 3 },
+    });
 
+    // ✅ Best path: FileSaver (very iPhone/Safari-friendly)
+    if (typeof saveAs === "function") {
+      saveAs(zipBlob, "videobreaker_frames.zip");
+      setStatus("ZIP saved. Check Files → Downloads.");
+      return;
+    }
+
+    // Fallback: anchor download
+    const url = URL.createObjectURL(zipBlob);
     const a = document.createElement("a");
     a.href = url;
     a.download = "videobreaker_frames.zip";
+    a.rel = "noopener";
     document.body.appendChild(a);
     a.click();
     a.remove();
 
-    URL.revokeObjectURL(url);
+    // Give Safari time before revoking
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
 
-    setStatus("ZIP downloaded.");
+    setStatus("ZIP downloaded. Check Files → Downloads.");
   } catch (err) {
     console.error(err);
     setStatus("ZIP error: " + (err?.message || String(err)));
