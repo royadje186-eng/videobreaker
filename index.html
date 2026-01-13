@@ -1,25 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="style.css">
-    <title>VideoBreaker</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="stylesheet" href="style.css" />
+  <title>VideoBreaker</title>
 </head>
 <body>
-    <div class="container">
-        <h1>VideoBreaker</h1>
-        <input type="file" id="videoInput" accept="video/*">
-        <select id="clipDuration">
-            <option value="0.1">0.1 seconds</option>
-            <option value="0.2">0.2 seconds</option>
-            <option value="0.3">0.3 seconds</option>
-            <option value="0.4">0.4 seconds</option>
-            <option value="0.5">0.5 seconds</option>
-        </select>
-        <button id="processButton">Process Video</button>
-        <div id="output"></div>
+  <div class="container">
+    <h1>VideoBreaker</h1>
+
+    <input type="file" id="videoInput" accept="video/*" />
+
+    <select id="clipDuration">
+      <option value="0.1">0.1 seconds</option>
+      <option value="0.2">0.2 seconds</option>
+      <option value="0.3">0.3 seconds</option>
+      <option value="0.4">0.4 seconds</option>
+      <option value="0.5">0.5 seconds</option>
+    </select>
+
+    <div class="row">
+      <label for="maxFrames"><b>Max frames</b> (safety limit)</label>
+      <input id="maxFrames" type="number" min="1" value="300" />
     </div>
-    <script src="script.js"></script>
+
+    <button id="processButton">Process Video</button>
+    <button id="downloadZipButton" disabled>Download All (ZIP)</button>
+
+    <div id="status"></div>
+    <div id="output" class="grid"></div>
+  </div>
+
+  <!-- Hidden work elements -->
+  <video id="hiddenVideo" muted playsinline style="display:none;"></video>
+  <canvas id="hiddenCanvas" style="display:none;"></canvas>
+
+  <!-- JSZip for "Download All" -->
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+
+  <script src="script.js"></script>
 </body>
 </html>
